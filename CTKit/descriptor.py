@@ -27,6 +27,8 @@ def get_BCUT_descriptor(mol: Chem.Mol):
             Chem.BondType.TRIPLE,
         ):
             weight = 0.1 * bond.GetBondTypeAsDouble()
+        elif bond.GetBondType() in (Chem.BondType.DATIVE, Chem.BondType.ZERO):
+            weight = 0.1
         else:
             raise ValueError(f"Unsupported bond type: {bond.GetBondType()}")
 

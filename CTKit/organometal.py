@@ -1,4 +1,4 @@
-from typing import TypedDict, cast
+from typing import TypedDict, TypeAlias, cast
 
 from rdkit import Chem
 
@@ -13,6 +13,10 @@ class Organometal(TypedDict):
     central_metal: str
     ligands: list[str]
     molecule_identifier: list[int | float]
+
+
+MatchedGroupAtomIdxes: TypeAlias = tuple[int, ...]
+MatchedGroupResults: TypeAlias = tuple[MatchedGroupAtomIdxes, ...]
 
 
 def is_organometal(mol: Chem.Mol):
@@ -66,7 +70,113 @@ def fragment_central_metal(mol: Chem.Mol):
 
 
 def standardize_ligand(mol: Chem.Mol):
-    # TODO: 리간드 표준화 하는 로직 추가
+    have_Mt = False
+    for atom in mol.GetAtoms():
+        if atom.GetAtomicNum() == 109:
+            have_Mt = True
+            break
+
+    # 금속과의 연결이 없을 경우 전하를 통해서 금속 추정
+    if not have_Mt:
+        charged_atom_idxes: list[int] = []
+        for atom in mol.GetAtoms():
+            if atom.GetFormalCharge() == -1:
+                charged_atom_idxes.append(atom.GetIdx())
+        if len(charged_atom_idxes) == 1:
+            rw_mol = Chem.RWMol(mol)
+            mt_idx = rw_mol.AddAtom(Chem.Atom(109))
+            rw_mol.AddBond(charged_atom_idxes[0], mt_idx, Chem.BondType.SINGLE)
+            mol = rw_mol.GetMol()
+        else:
+            raise ValueError(
+                "Received a ligand without metal connectivity information: "
+                f"{Chem.MolToSmiles(mol)}"
+            )
+
+    # Beta ketonate 전처리
+    beta_ketonate_matched: MatchedGroupResults = mol.GetSubstructMatches(
+        Chem.MolFromSmarts("[O;!$([O]~[Mt])]=CC=CO[Mt]")
+    )
+    if beta_ketonate_matched:
+        rw_mol = Chem.RWMol(mol)
+        oxygen_index = beta_ketonate_matched[0][0]
+        mt_index = rw_mol.AddAtom(Chem.Atom(109))
+        rw_mol.AddBond(oxygen_index, mt_index, Chem.BondType.SINGLE)
+
+        return rw_mol.GetMol()
+
+    # 카르보닐기 전처리
+    carbonyl_matched: MatchedGroupResults = mol.GetSubstructMatches(
+        Chem.MolFromSmarts("[Mt]=C=[O,O+]")
+    )
+    if carbonyl_matched:
+        return Chem.MolFromSmiles("[Mt]C#[O+]", sanitize=False)
+
+    # Cyclopentadienyl기 전처리
+    cp_matched: MatchedGroupResults = mol.GetSubstructMatches(
+        Chem.MolFromSmarts("[Mt]c1cccc1")
+    )
+    if cp_matched:
+        rw_mol = Chem.RWMol(mol)
+        for matched_atom_idx in cp_matched[0]:
+            atom = rw_mol.GetAtomWithIdx(matched_atom_idx)
+            if atom.GetAtomicNum() == 109:
+                continue
+
+            atom.SetIsAromatic(False)
+            bonds = cast(tuple[Chem.Bond, ...], atom.GetBonds())
+            for bond in bonds:
+                if bond.GetIsAromatic():
+                    bond.SetBondType(Chem.BondType.SINGLE)
+                    bond.SetIsAromatic(False)
+
+            neighbors = cast(tuple[Chem.Atom, ...], atom.GetNeighbors())
+            has_mt_neighbor = False
+            for neighbor in neighbors:
+                if neighbor.GetAtomicNum() == 109:
+                    has_mt_neighbor = True
+                    break
+
+            if has_mt_neighbor:
+                continue
+
+            mt_index = rw_mol.AddAtom(Chem.Atom(109))
+            rw_mol.AddBond(matched_atom_idx, mt_index, Chem.BondType.SINGLE)
+
+        return rw_mol.GetMol()
+
+    # Arene기 전처리
+    arene_matched: MatchedGroupResults = mol.GetSubstructMatches(
+        Chem.MolFromSmarts("[Mt]c1ccccc1")
+    )
+    if arene_matched:
+        rw_mol = Chem.RWMol(mol)
+        for matched_atom_idx in arene_matched[0]:
+            atom = rw_mol.GetAtomWithIdx(matched_atom_idx)
+            if atom.GetAtomicNum() == 109:
+                continue
+
+            atom.SetIsAromatic(False)
+            bonds = cast(tuple[Chem.Bond, ...], atom.GetBonds())
+            for bond in bonds:
+                if bond.GetIsAromatic():
+                    bond.SetBondType(Chem.BondType.SINGLE)
+                    bond.SetIsAromatic(False)
+
+            neighbors = cast(tuple[Chem.Atom, ...], atom.GetNeighbors())
+            has_mt_neighbor = False
+            for neighbor in neighbors:
+                if neighbor.GetAtomicNum() == 109:
+                    has_mt_neighbor = True
+                    break
+
+            if has_mt_neighbor:
+                continue
+
+            mt_index = rw_mol.AddAtom(Chem.Atom(109))
+            rw_mol.AddBond(matched_atom_idx, mt_index, Chem.BondType.SINGLE)
+
+        return rw_mol.GetMol()
 
     return mol
 
