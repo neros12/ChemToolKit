@@ -2,7 +2,7 @@ from rdkit import Chem
 
 import numpy as np
 
-__all__ = ["get_BCUT_descriptor"]
+__all__ = ["get_BCUT_descriptor", "cosine_similarity"]
 
 
 def get_BCUT_descriptor(mol: Chem.Mol):
@@ -38,3 +38,25 @@ def get_BCUT_descriptor(mol: Chem.Mol):
     eigenvalues = np.linalg.eigvalsh(molecular_matrix)
 
     return float(eigenvalues[0]), float(eigenvalues[-1])
+
+
+def cosine_similarity(
+    vector_a: list[float | int] | np.ndarray[tuple[int], np.dtype[np.number]],
+    vector_b: list[float | int] | np.ndarray[tuple[int], np.dtype[np.number]],
+) -> float:
+    array_a = np.asarray(vector_a, dtype=float)
+    array_b = np.asarray(vector_b, dtype=float)
+
+    scale_a = np.max(np.abs(array_a))
+    scale_b = np.max(np.abs(array_b))
+    if scale_a == 0 or scale_b == 0:
+        raise ValueError("Cosine similarity is undefined for zero vectors.")
+
+    array_a = array_a / scale_a
+    array_b = array_b / scale_b
+    similarity = np.dot(
+        array_a / np.linalg.norm(array_a),
+        array_b / np.linalg.norm(array_b),
+    )
+
+    return float(np.clip(similarity, -1.0, 1.0))

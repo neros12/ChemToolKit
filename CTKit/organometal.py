@@ -58,7 +58,8 @@ def fragment_central_metal(mol: Chem.Mol):
             atom.SetIsotope(0)
 
     mols = cast(
-        tuple[Chem.Mol, ...], Chem.GetMolFrags(f_mol, asMols=True, sanitizeFrags=False)
+        tuple[Chem.Mol, ...],
+        Chem.GetMolFrags(f_mol, asMols=True, sanitizeFrags=False),
     )
 
     return mols
