@@ -20,6 +20,14 @@ MatchedGroupResults: TypeAlias = tuple[MatchedGroupAtomIdxes, ...]
 
 
 def is_organometal(mol: Chem.Mol):
+    """Check whether a molecule satisfies the supported elemental composition.
+
+    Args:
+        mol: RDKit molecule to inspect without modifying it.
+
+    Returns:
+        boolean
+    """
     num_organic_atoms = 0
     num_metallic_atoms = 0
     num_other_atoms = 0
@@ -182,6 +190,31 @@ def standardize_ligand(mol: Chem.Mol):
 
 
 def read_organometal(SMILES: str) -> Organometal:
+    """Extract the central metal, standardized ligands, and a numeric identifier.
+
+    Metal attachment sites on ligands are represented by Mt atoms. Ligand
+    strings use the lossy normalization performed by mol_to_SMILES. Parsing
+    skips sanitization, but later descriptor calculation may sanitize ligands.
+
+    Args:
+        SMILES: Parseable SMILES satisfying is_organometal, with at least one
+            bond to the central metal and supported ligand structures.
+
+    Returns:
+        An Organometal dictionary containing:
+            central_metal: Metal symbol in brackets, without its formal charge.
+            ligands: Standardized ligand strings, including repeated ligands.
+            molecule_identifier: A list of the metal atomic number, ligand
+                count, and minimum and maximum BCUT eigenvalues of the combined
+                standardized ligands. Eigenvalues are rounded to eight decimal
+                places. This identifier is not guaranteed to be unique.
+
+    Raises:
+        ValueError: Elemental composition is unsupported, a ligand lacks metal
+            connectivity that can be inferred from a single -1 charged atom,
+            or descriptor calculation encounters an unsupported bond type
+            or invalid valence during sanitization.
+    """
     central_metal = ""
     central_metal_atomic_number = 0
     combined_ligand = Chem.Mol()
