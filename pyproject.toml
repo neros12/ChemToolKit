@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools>=77.0.3"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ChemToolKit"
+version = "2026.10.21"
+description = "Cheminformatics utilities for organometallic molecules."
+readme = "README.md"
+requires-python = ">=3.11"
+license = "Apache-2.0"
+license-files = ["LICENSE"]
+dependencies = [
+    "numpy",
+    "rdkit",
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["CTKit", "CTKit.*"]
+namespaces = true

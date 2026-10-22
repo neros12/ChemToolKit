@@ -3,7 +3,7 @@ from typing import TypedDict, TypeAlias, cast
 from rdkit import Chem
 
 from .utils import mol_to_SMILES
-from .descriptor import get_BCUT_descriptor
+from .descriptor import BCUT_descriptor
 from .constants import METALLIC_ATOM_NUMBERS, ORGANIC_ATOM_NUMBERS
 
 __all__ = ["read_organometal", "is_organometal"]
@@ -240,7 +240,7 @@ def read_organometal(SMILES: str) -> Organometal:
         ligand_SMILES = mol_to_SMILES(standardized_ligand)
         ligands.append(ligand_SMILES)
 
-    bcut_min, bcut_max = get_BCUT_descriptor(combined_ligand)
+    bcut_min, bcut_max = BCUT_descriptor(combined_ligand)
     molecule_identifier: list[int | float] = [
         central_metal_atomic_number,
         len(ligands),

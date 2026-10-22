@@ -2,10 +2,10 @@ from rdkit import Chem
 
 import numpy as np
 
-__all__ = ["get_BCUT_descriptor", "cosine_similarity"]
+__all__ = ["BCUT_descriptor", "cosine_similarity"]
 
 
-def get_BCUT_descriptor(mol: Chem.Mol):
+def BCUT_descriptor(mol: Chem.Mol):
     """
     Matrix diagonal entries are atomic numbers. Nonbonded entries are 0.001.
     Bond weights are 0.15 for aromatic bonds, 0.1 times the bond order for
